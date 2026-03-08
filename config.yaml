@@ -1,0 +1,191 @@
+mixed-port: 7890
+allow-lan: true
+tcp-concurrent: true
+unified-delay: true
+bind-address: '*'
+mode: rule
+log-level: info
+external-controller: '127.0.0.1:9090'
+tun:
+    enable: false
+    stack: system
+    auto-route: true
+    auto-detect-interface: true
+    strict-route: true
+    dns-hijack:
+        - any:53
+dns:
+    enable: true
+    ipv6: true
+    enhanced-mode: fake-ip
+    fake-ip-range: 198.18.0.1/16
+    use-hosts: true
+    direct-nameserver: ['https://1.12.12.12/dns-query', 'https://120.53.53.53/dns-query', 'https://sm2.doh.pub/dns-query', 'https://223.5.5.5/dns-query#disable-ipv6=true', 'https://223.6.6.6/dns-query#disable-ipv6=true', 'https://apad.pro/dns-doh']
+    default-nameserver: [223.5.5.5, 119.29.29.29, '[2400:3200::1]:53', '[240C::6666]:53', system]
+    proxy-server-nameserver: ['https://1.12.12.12/dns-query', 'https://120.53.53.53/dns-query', 'https://sm2.doh.pub/dns-query', 'https://223.5.5.5/dns-query', 'https://223.6.6.6/dns-query', 'https://apad.pro/dns-doh']
+proxy-providers:
+    subscription:
+        type: http
+        url: '__MIHOMO_SUBSCRIPTION_URL__'
+        path: ./providers/subscription.yaml
+        interval: 3600
+        health-check:
+            enable: true
+            url: 'https://www.gstatic.com/generate_204'
+            interval: 300
+            lazy: true
+proxy-groups:
+    - { name: 选择节点, type: select, proxies: [自动选择, DIRECT], use: [subscription] }
+    - { name: 自动选择, type: url-test, use: [subscription], url: 'https://www.gstatic.com/generate_204', interval: 300, tolerance: 20, lazy: true }
+    - { name: 专项代理, type: select, proxies: [自动选择, 选择节点], use: [subscription] }
+    - { name: Telegram专线, type: select, proxies: [专项代理, 选择节点, 自动选择] }
+    - { name: GitHub专线, type: select, proxies: [专项代理, 选择节点, 自动选择] }
+    - { name: Google谷歌应用, type: select, proxies: [选择节点, 自动选择, 专项代理, DIRECT] }
+    - { name: ChatGPT, type: select, proxies: [选择节点, 自动选择, 专项代理] }
+    - { name: PayPal, type: select, proxies: [选择节点, 自动选择, 专项代理, DIRECT] }
+    - { name: 海外游戏平台, type: select, proxies: [DIRECT, 选择节点, 自动选择, 专项代理] }
+    - { name: Bilibili哔哩哔哩, type: select, proxies: [DIRECT, 选择节点, 自动选择] }
+    - { name: 广告屏蔽, type: select, proxies: [REJECT, DIRECT] }
+    - { name: 主站加速, type: select, proxies: [自动选择, 选择节点, DIRECT] }
+rule-providers:
+    direct: { type: http, behavior: domain, format: mrs, url: 'https://edgeone.gh-proxy.org/https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/cn-lite.mrs', path: ./ruleset/direct.list, interval: 604800 }
+    reject: { type: http, behavior: domain, format: mrs, url: 'https://edgeone.gh-proxy.org/raw.githubusercontent.com/privacy-protection-tools/anti-ad.github.io/master/docs/mihomo.mrs', path: ./ruleset/aiti-ad.list, interval: 604800 }
+    gfw: { type: http, behavior: domain, url: 'https://edgeone.gh-proxy.org/raw.githubusercontent.com/Loyalsoldier/clash-rules/release/gfw.txt', path: ./ruleset/gfw.list, interval: 604800 }
+    cncidr: { type: http, behavior: ipcidr, format: mrs, url: 'https://edgeone.gh-proxy.org/https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/cnip.mrs', path: ./ruleset/cncidr.list, interval: 604800 }
+rules:
+    - 'DOMAIN-KEYWORD,falun,REJECT'
+    - 'DOMAIN-KEYWORD,minghui,REJECT'
+    - 'DOMAIN-SUFFIX,falunaz.net,REJECT'
+    - 'DOMAIN-SUFFIX,wujieliulan.com,REJECT'
+    - 'DOMAIN-SUFFIX,mhradio.org,REJECT'
+    - 'DOMAIN-SUFFIX,dongtaiwang.com,REJECT'
+    - 'DOMAIN-SUFFIX,epochtimes.com,REJECT'
+    - 'DOMAIN-SUFFIX,ntdtv.com,REJECT'
+    - 'DOMAIN-KEYWORD,mtalk.google.com,Google谷歌应用'
+    - 'DOMAIN-SUFFIX,services.googleapis.cn,DIRECT'
+    - 'DOMAIN-REGEX,^r+[0-9]+(---|\.)sn-(2x3|ni5|j5o)\w{5}\.xn--ngstr-lra8j\.com$,DIRECT'
+    - 'DOMAIN-SUFFIX,xn--ngstr-lra8j.com,Google谷歌应用'
+    - 'DOMAIN-KEYWORD,google,Google谷歌应用'
+    - 'DOMAIN-KEYWORD,gmail,Google谷歌应用'
+    - 'DOMAIN-SUFFIX,youtube.com,Google谷歌应用'
+    - 'DOMAIN-SUFFIX,youtu.be,Google谷歌应用'
+    - 'DOMAIN-SUFFIX,gvt1.com,Google谷歌应用'
+    - 'DOMAIN-SUFFIX,gvt2.com,Google谷歌应用'
+    - 'DOMAIN-SUFFIX,chromium.org,Google谷歌应用'
+    - 'DOMAIN-SUFFIX,gstatic.com,Google谷歌应用'
+    - 'DOMAIN-KEYWORD,discord,专项代理'
+    - 'DOMAIN-KEYWORD,tron,选择节点'
+    - 'DOMAIN-KEYWORD,token,选择节点'
+    - 'DOMAIN-KEYWORD,intl,选择节点'
+    - 'DOMAIN-KEYWORD,yysub,选择节点'
+    - 'DOMAIN-KEYWORD,blogspot,专项代理'
+    - 'DOMAIN-KEYWORD,whatsapp,专项代理'
+    - 'DOMAIN-KEYWORD,linkedin,专项代理'
+    - 'DOMAIN-SUFFIX,larksuite.com,选择节点'
+    - 'DOMAIN-SUFFIX,okx.com,选择节点'
+    - 'DOMAIN-SUFFIX,binance.com,选择节点'
+    - 'DOMAIN-KEYWORD,amazon,选择节点'
+    - 'DOMAIN-KEYWORD,github,专项代理'
+    - 'DOMAIN-SUFFIX,git.io,专项代理'
+    - 'DOMAIN-KEYWORD,facebook,专项代理'
+    - 'DOMAIN-SUFFIX,fb.me,专项代理'
+    - 'DOMAIN-SUFFIX,fbcdn.net,专项代理'
+    - 'DOMAIN-KEYWORD,twitter,专项代理'
+    - 'DOMAIN-KEYWORD,instagram,专项代理'
+    - 'DOMAIN-KEYWORD,dropbox,专项代理'
+    - 'DOMAIN-SUFFIX,twimg.com,专项代理'
+    - 'DOMAIN-SUFFIX,alibabacloud.com,选择节点'
+    - 'DOMAIN-SUFFIX,nodeseek.com,选择节点'
+    - 'DOMAIN-SUFFIX,tiktokv.com,选择节点'
+    - 'DOMAIN-SUFFIX,tiktokcdn.com,选择节点'
+    - 'DOMAIN-SUFFIX,pexpay.com,选择节点'
+    - 'DOMAIN-SUFFIX,token.im,选择节点'
+    - 'DOMAIN-SUFFIX,changenow.io,选择节点'
+    - 'DOMAIN-SUFFIX,ooklaserver.net,选择节点'
+    - 'DOMAIN-KEYWORD,telegram,专项代理'
+    - 'DOMAIN-SUFFIX,t.me,专项代理'
+    - 'DOMAIN-SUFFIX,tdesktop.com,专项代理'
+    - 'DOMAIN-SUFFIX,telegra.ph,专项代理'
+    - 'DOMAIN-SUFFIX,telesco.pe,专项代理'
+    - 'IP-CIDR,91.105.192.0/23,专项代理,no-resolve'
+    - 'IP-CIDR,91.108.4.0/22,专项代理,no-resolve'
+    - 'IP-CIDR,91.108.8.0/21,专项代理,no-resolve'
+    - 'IP-CIDR,91.108.16.0/21,专项代理,no-resolve'
+    - 'IP-CIDR,91.108.56.0/22,专项代理,no-resolve'
+    - 'IP-CIDR,95.161.64.0/20,专项代理,no-resolve'
+    - 'IP-CIDR,149.154.160.0/20,专项代理,no-resolve'
+    - 'IP-CIDR6,185.76.151.0/24,专项代理,no-resolve'
+    - 'IP-CIDR6,2001:67c:4e8::/48,专项代理,no-resolve'
+    - 'IP-CIDR6,2001:b28:f23c::/47,专项代理,no-resolve'
+    - 'IP-CIDR6,2001:b28:f23f::/48,专项代理,no-resolve'
+    - 'IP-CIDR6,2a0a:f280::/32,专项代理,no-resolve'
+    - 'DOMAIN-SUFFIX,cn.bing.com,DIRECT'
+    - 'DOMAIN-SUFFIX,bing.com,专项代理'
+    - 'DOMAIN-SUFFIX,bingapis.com,专项代理'
+    - 'DOMAIN-SUFFIX,azure.cn,DIRECT'
+    - 'DOMAIN-SUFFIX,copilot.microsoft.com,专项代理'
+    - 'DOMAIN-SUFFIX,microsoft.com,DIRECT'
+    - 'DOMAIN-SUFFIX,windows.net,DIRECT'
+    - 'DOMAIN-SUFFIX,windowsupdate.com,DIRECT'
+    - 'DOMAIN-SUFFIX,mzstatic.com,DIRECT'
+    - 'DOMAIN-SUFFIX,aaplimg.com,DIRECT'
+    - 'DOMAIN-SUFFIX,me.com,DIRECT'
+    - 'DOMAIN-KEYWORD,apple,DIRECT'
+    - 'DOMAIN-KEYWORD,icloud,DIRECT'
+    - 'DOMAIN-KEYWORD,mzstatic,DIRECT'
+    - 'DOMAIN-KEYWORD,adobe,DIRECT'
+    - 'DOMAIN-SUFFIX,openai.com,ChatGPT'
+    - 'DOMAIN-SUFFIX,chatgpt.com,ChatGPT'
+    - 'DOMAIN-KEYWORD,paypal,PayPal'
+    - 'DOMAIN-SUFFIX,steamserver.net,DIRECT'
+    - 'DOMAIN-SUFFIX,steamcdn-a.akamaihd.net,DIRECT'
+    - 'DOMAIN-SUFFIX,cm.steampowered.com,DIRECT'
+    - 'DOMAIN-SUFFIX,steam.clngaa.com,DIRECT'
+    - 'DOMAIN,cn.download.nvidia.com,DIRECT'
+    - 'DOMAIN-KEYWORD,steam,海外游戏平台'
+    - 'DOMAIN-SUFFIX,cloudsync-prod.s3.amazonaws.com,海外游戏平台'
+    - 'DOMAIN-SUFFIX,eaasserts-a.akamaihd.net,海外游戏平台'
+    - 'DOMAIN-SUFFIX,origin-a.akamaihd.net,海外游戏平台'
+    - 'DOMAIN-SUFFIX,originasserts.akamaized.net,海外游戏平台'
+    - 'DOMAIN-SUFFIX,rtm.tnt-ea.com,海外游戏平台'
+    - 'DOMAIN-SUFFIX,origin.com,海外游戏平台'
+    - 'DOMAIN-SUFFIX,ea.com,海外游戏平台'
+    - 'DOMAIN-SUFFIX,gamepass.com,海外游戏平台'
+    - 'DOMAIN-KEYWORD,xbox,海外游戏平台'
+    - 'DOMAIN-SUFFIX,helpshift.com,海外游戏平台'
+    - 'DOMAIN-SUFFIX,paragon.com,海外游戏平台'
+    - 'DOMAIN-SUFFIX,unrealengine.com,海外游戏平台'
+    - 'DOMAIN-SUFFIX,epicgames.com,海外游戏平台'
+    - 'DOMAIN-SUFFIX,epicgames.dev,海外游戏平台'
+    - 'DOMAIN-KEYWORD,bili,Bilibili哔哩哔哩'
+    - 'DOMAIN-SUFFIX,xtls.space,主站加速'
+    - 'DOMAIN-KEYWORD,gov.,DIRECT,no-resolve'
+    - 'DOMAIN-KEYWORD,.cn,DIRECT,no-resolve'
+    - 'DOMAIN,cdn.staticfile.net,DIRECT'
+    - 'DOMAIN-SUFFIX,pttime.org,DIRECT'
+    - 'DOMAIN-SUFFIX,bfv.zth.ink,DIRECT'
+    - 'RULE-SET,reject,广告屏蔽'
+    - 'RULE-SET,gfw,选择节点'
+    - 'RULE-SET,direct,DIRECT'
+    - 'IP-CIDR,0.0.0.0/8,DIRECT'
+    - 'IP-CIDR,10.0.0.0/8,DIRECT'
+    - 'IP-CIDR,100.64.0.0/10,DIRECT'
+    - 'IP-CIDR,127.0.0.0/8,DIRECT'
+    - 'IP-CIDR,169.254.0.0/16,DIRECT'
+    - 'IP-CIDR,172.16.0.0/12,DIRECT'
+    - 'IP-CIDR,192.0.0.0/24,DIRECT'
+    - 'IP-CIDR,192.0.2.0/24,DIRECT'
+    - 'IP-CIDR,192.88.99.0/24,DIRECT'
+    - 'IP-CIDR,192.168.0.0/16,DIRECT'
+    - 'IP-CIDR,198.18.0.0/15,DIRECT'
+    - 'IP-CIDR,198.51.100.0/24,DIRECT'
+    - 'IP-CIDR,203.0.113.0/24,DIRECT'
+    - 'IP-CIDR,224.0.0.0/3,DIRECT'
+    - 'IP-CIDR,::/127,DIRECT'
+    - 'IP-CIDR,fc00::/7,DIRECT'
+    - 'IP-CIDR,fe80::/10,DIRECT'
+    - 'IP-CIDR,ff00::/8,DIRECT'
+    - 'RULE-SET,cncidr,DIRECT'
+    - 'MATCH,选择节点'
+secret: '__MIHOMO_SECRET__'
+external-ui: /etc/mihomo/ui

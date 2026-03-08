@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+
+dist/
+providers/
+*.tmp
+*.bak
+*.swp
+*.swo
+
+.DS_Store
+Thumbs.db
