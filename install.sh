@@ -455,14 +455,14 @@ resolve_mihomo_download() {
   local release_api_url
   release_api_url=$(resolve_release_api_url)
 
-  python3 - "$release_api_url" "$MIHOMO_ASSET_NAME" <<'PY'
+  python3 - "$release_api_url" "$MIHOMO_ASSET_NAME" "$arch_patterns" <<'PY'
 import json
 import sys
 import urllib.request
 
 release_api_url = sys.argv[1]
 asset_name = sys.argv[2].strip()
-patterns = [line.strip() for line in sys.stdin.read().splitlines() if line.strip()]
+patterns = [line.strip() for line in sys.argv[3].splitlines() if line.strip()]
 
 req = urllib.request.Request(release_api_url, headers={"User-Agent": "mihomo-migrate-installer"})
 with urllib.request.urlopen(req, timeout=30) as response:
@@ -517,11 +517,7 @@ install_mihomo_binary() {
   tmpdir=$(mktemp -d)
   trap 'rm -rf "$tmpdir"' RETURN
 
-  if [ -n "$MIHOMO_ASSET_NAME" ]; then
-    readarray -t release_meta < <(printf '' | resolve_mihomo_download)
-  else
-    readarray -t release_meta < <(detect_asset_patterns | resolve_mihomo_download)
-  fi
+  readarray -t release_meta < <(resolve_mihomo_download)
 
   asset_name=${release_meta[0]:-}
   download_url=${release_meta[1]:-}
